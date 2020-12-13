@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module JSONSchemer
   module Format
     # this is no good
@@ -8,7 +9,7 @@ module JSONSchemer
     JSON_POINTER_REGEX_STRING = '(\/([^~\/]|~[01])*)*'
     JSON_POINTER_REGEX = /\A#{JSON_POINTER_REGEX_STRING}\z/.freeze
     RELATIVE_JSON_POINTER_REGEX = /\A(0|[1-9]\d*)(#|#{JSON_POINTER_REGEX_STRING})?\z/.freeze
-    DATE_TIME_OFFSET_REGEX = /(Z|[\+\-]([01][0-9]|2[0-3]):[0-5][0-9])\z/i.freeze
+    DATE_TIME_OFFSET_REGEX = /(Z|[+\-]([01][0-9]|2[0-3]):[0-5][0-9])\z/i.freeze
     INVALID_QUERY_REGEX = /[[:space:]]/.freeze
 
     def valid_spec_format?(data, format)
@@ -62,6 +63,7 @@ module JSONSchemer
       DATE_TIME_OFFSET_REGEX.match?(data)
     rescue ArgumentError => e
       raise e unless e.message == 'invalid date'
+
       false
     end
 
@@ -84,11 +86,12 @@ module JSONSchemer
       scheme, _userinfo, _host, _port, _registry, _path, opaque, query, _fragment = URI::RFC3986_PARSER.split(data)
       # URI::RFC3986_PARSER.parse allows spaces in these and I don't think it should
       raise URI::InvalidURIError if INVALID_QUERY_REGEX.match?(query) || INVALID_QUERY_REGEX.match?(opaque)
+
       scheme
     end
 
     def valid_uri?(data)
-      !!parse_uri_scheme(data)
+      !parse_uri_scheme(data).nil?
     rescue URI::InvalidURIError
       false
     end
@@ -105,7 +108,7 @@ module JSONSchemer
         us = match
         tmp = +''
         us.each_byte do |uc|
-          tmp << sprintf('%%%02X', uc)
+          tmp << format('%%%02X', uc)
         end
         tmp
       end.force_encoding(Encoding::US_ASCII)

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module JSONSchemer
   module Schema
     class Draft4 < Base
@@ -13,7 +14,7 @@ module JSONSchemer
         'regex'
       ].freeze
 
-    private
+      private
 
       def id_keyword
         ID_KEYWORD
@@ -32,7 +33,7 @@ module JSONSchemer
       end
 
       def validate_integer(instance, &block)
-        if !instance.data.is_a?(Integer)
+        unless instance.data.is_a?(Integer)
           yield error(instance, 'integer')
           return
         end

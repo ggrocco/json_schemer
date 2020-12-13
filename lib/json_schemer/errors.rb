@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Based on code from @robacarp found in issue 48:
 # https://github.com/davishmcclurg/json_schemer/issues/48
 #

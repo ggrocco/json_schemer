@@ -1,10 +1,12 @@
 # frozen_string_literal: true
+
 module JSONSchemer
   module Schema
     class Base
       include Format
 
-      Instance = Struct.new(:data, :data_pointer, :schema, :schema_pointer, :parent_uri, :before_property_validation, :after_property_validation) do
+      Instance = Struct.new(:data, :data_pointer, :schema, :schema_pointer, :parent_uri, :before_property_validation,
+                            :after_property_validation) do
         def merge(
           data: self.data,
           data_pointer: self.data_pointer,
@@ -14,7 +16,8 @@ module JSONSchemer
           before_property_validation: self.before_property_validation,
           after_property_validation: self.after_property_validation
         )
-          self.class.new(data, data_pointer, schema, schema_pointer, parent_uri, before_property_validation, after_property_validation)
+          self.class.new(data, data_pointer, schema, schema_pointer, parent_uri, before_property_validation,
+                         after_property_validation)
         end
       end
 
@@ -24,10 +27,10 @@ module JSONSchemer
       BOOLEANS = Set[true, false].freeze
 
       RUBY_REGEX_ANCHORS_TO_ECMA_262 = {
-        :bos => 'A',
-        :eos => 'z',
-        :bol => '\A',
-        :eol => '\z'
+        bos: 'A',
+        eos: 'z',
+        bol: '\A',
+        eol: '\z'
       }.freeze
 
       INSERT_DEFAULT_PROPERTY = proc do |data, property, property_schema, _parent|
@@ -46,7 +49,11 @@ module JSONSchemer
         keywords: nil,
         ref_resolver: DEFAULT_REF_RESOLVER
       )
-        raise InvalidSymbolKey, 'schemas must use string keys' if schema.is_a?(Hash) && !schema.empty? && !schema.first.first.is_a?(String)
+        if schema.is_a?(Hash) && !schema.empty? && !schema.first.first.is_a?(String)
+          raise InvalidSymbolKey,
+                'schemas must use string keys'
+        end
+
         @root = schema
         @format = format
         @before_property_validation = [*before_property_validation]
@@ -62,17 +69,18 @@ module JSONSchemer
       end
 
       def validate(data)
-        validate_instance(Instance.new(data, '', root, '', nil, @before_property_validation, @after_property_validation))
+        validate_instance(Instance.new(data, '', root, '', nil, @before_property_validation,
+                                       @after_property_validation))
       end
 
-    protected
+      protected
 
       def valid_instance?(instance)
         validate_instance(instance).none?
       end
 
       def validate_instance(instance, &block)
-        return enum_for(:validate_instance, instance) unless block_given?
+        return enum_for(:validate_instance, instance) unless block
 
         schema = instance.schema
 
@@ -103,38 +111,32 @@ module JSONSchemer
           return
         end
 
-        if format? && custom_format?(format)
-          validate_custom_format(instance, formats.fetch(format), &block)
-        end
+        validate_custom_format(instance, formats.fetch(format), &block) if format? && custom_format?(format)
 
         data = instance.data
 
-        if keywords
-          keywords.each do |keyword, callable|
-            if schema.key?(keyword)
-              result = callable.call(data, schema, instance.data_pointer)
-              if result.is_a?(Array)
-                result.each(&block)
-              elsif !result
-                yield error(instance, keyword)
-              end
-            end
+        keywords&.each do |keyword, callable|
+          next unless schema.key?(keyword)
+
+          result = callable.call(data, schema, instance.data_pointer)
+          if result.is_a?(Array)
+            result.each(&block)
+          elsif !result
+            yield error(instance, keyword)
           end
         end
 
         yield error(instance, 'enum') if enum && !enum.include?(data)
         yield error(instance, 'const') if schema.key?('const') && schema['const'] != data
 
-        if all_of
-          all_of.each_with_index do |subschema, index|
-            subinstance = instance.merge(
-              schema: subschema,
-              schema_pointer: "#{instance.schema_pointer}/allOf/#{index}",
-              before_property_validation: false,
-              after_property_validation: false
-            )
-            validate_instance(subinstance, &block)
-          end
+        all_of&.each_with_index do |subschema, index|
+          subinstance = instance.merge(
+            schema: subschema,
+            schema_pointer: "#{instance.schema_pointer}/allOf/#{index}",
+            before_property_validation: false,
+            after_property_validation: false
+          )
+          validate_instance(subinstance, &block)
         end
 
         if any_of
@@ -163,7 +165,7 @@ module JSONSchemer
           valid_subschema_count = subschemas.count(&:none?)
           if valid_subschema_count > 1
             yield error(instance, 'oneOf')
-          elsif valid_subschema_count == 0
+          elsif valid_subschema_count.zero?
             subschemas.each { |subschema| subschema.each(&block) }
           end
         end
@@ -178,10 +180,17 @@ module JSONSchemer
           yield error(subinstance, 'not') if valid_instance?(subinstance)
         end
 
-        if if_schema && valid_instance?(instance.merge(schema: if_schema, before_property_validation: false, after_property_validation: false))
-          validate_instance(instance.merge(schema: then_schema, schema_pointer: "#{instance.schema_pointer}/then"), &block) unless then_schema.nil?
+        if if_schema && valid_instance?(instance.merge(schema: if_schema, before_property_validation: false,
+                                                       after_property_validation: false))
+          unless then_schema.nil?
+            validate_instance(instance.merge(schema: then_schema, schema_pointer: "#{instance.schema_pointer}/then"),
+                              &block)
+          end
         elsif if_schema
-          validate_instance(instance.merge(schema: else_schema, schema_pointer: "#{instance.schema_pointer}/else"), &block) unless else_schema.nil?
+          unless else_schema.nil?
+            validate_instance(instance.merge(schema: else_schema, schema_pointer: "#{instance.schema_pointer}/else"),
+                              &block)
+          end
         end
 
         case type
@@ -202,7 +211,7 @@ module JSONSchemer
         @ids ||= resolve_ids(root)
       end
 
-    private
+      private
 
       attr_reader :root, :formats, :keywords, :ref_resolver
 
@@ -239,7 +248,7 @@ module JSONSchemer
           'schema' => instance.schema,
           'schema_pointer' => instance.schema_pointer,
           'root_schema' => root,
-          'type' => type,
+          'type' => type
         }
         error['details'] = details if details
         error
@@ -330,11 +339,11 @@ module JSONSchemer
         yield error(instance, 'format') if custom_format != false && !custom_format.call(instance.data, instance.schema)
       end
 
-      def validate_exclusive_maximum(instance, exclusive_maximum, maximum)
+      def validate_exclusive_maximum(instance, exclusive_maximum, _maximum)
         yield error(instance, 'exclusiveMaximum') if instance.data >= exclusive_maximum
       end
 
-      def validate_exclusive_minimum(instance, exclusive_minimum, minimum)
+      def validate_exclusive_minimum(instance, exclusive_minimum, _minimum)
         yield error(instance, 'exclusiveMinimum') if instance.data <= exclusive_minimum
       end
 
@@ -380,7 +389,7 @@ module JSONSchemer
         validate_numeric(instance, &block)
       end
 
-      def validate_string(instance, &block)
+      def validate_string(instance)
         data = instance.data
 
         unless data.is_a?(String)
@@ -407,11 +416,11 @@ module JSONSchemer
 
           if content_encoding
             decoded_data = case content_encoding.downcase
-            when 'base64'
-              safe_strict_decode64(data)
-            else # '7bit', '8bit', 'binary', 'quoted-printable'
-              raise NotImplementedError
-            end
+                           when 'base64'
+                             safe_strict_decode64(data)
+                           else # '7bit', '8bit', 'binary', 'quoted-printable'
+                             raise NotImplementedError
+                           end
             yield error(instance, 'contentEncoding') unless decoded_data
           end
 
@@ -446,7 +455,9 @@ module JSONSchemer
         yield error(instance, 'maxItems') if max_items && data.size > max_items
         yield error(instance, 'minItems') if min_items && data.size < min_items
         yield error(instance, 'uniqueItems') if unique_items && data.size != data.uniq.size
-        yield error(instance, 'contains') if !contains.nil? && data.all? { |item| !valid_instance?(instance.merge(data: item, schema: contains)) }
+        yield error(instance, 'contains') if !contains.nil? && data.all? do |item|
+                                               !valid_instance?(instance.merge(data: item, schema: contains))
+                                             end
 
         if items.is_a?(Array)
           data.each_with_index do |item, index|
@@ -510,13 +521,13 @@ module JSONSchemer
           end
         end
 
-        if dependencies
-          dependencies.each do |key, value|
-            next unless data.key?(key)
-            subschema = value.is_a?(Array) ? { 'required' => value } : value
-            subinstance = instance.merge(schema: subschema, schema_pointer: "#{instance.schema_pointer}/dependencies/#{key}")
-            validate_instance(subinstance, &block)
-          end
+        dependencies&.each do |key, value|
+          next unless data.key?(key)
+
+          subschema = value.is_a?(Array) ? { 'required' => value } : value
+          subinstance = instance.merge(schema: subschema,
+                                       schema_pointer: "#{instance.schema_pointer}/dependencies/#{key}")
+          validate_instance(subinstance, &block)
         end
 
         yield error(instance, 'maxProperties') if max_properties && data.size > max_properties
@@ -539,7 +550,7 @@ module JSONSchemer
 
           matched_key = false
 
-          if properties && properties.key?(key)
+          if properties&.key?(key)
             subinstance = instance.merge(
               data: value,
               data_pointer: "#{instance.data_pointer}/#{key}",
@@ -555,30 +566,30 @@ module JSONSchemer
               [pattern, ecma_262_regex(pattern), property_schema]
             end
             regex_pattern_properties.each do |pattern, regex, property_schema|
-              if regex.match?(key)
-                subinstance = instance.merge(
-                  data: value,
-                  data_pointer: "#{instance.data_pointer}/#{key}",
-                  schema: property_schema,
-                  schema_pointer: "#{instance.schema_pointer}/patternProperties/#{pattern}"
-                )
-                validate_instance(subinstance, &block)
-                matched_key = true
-              end
+              next unless regex.match?(key)
+
+              subinstance = instance.merge(
+                data: value,
+                data_pointer: "#{instance.data_pointer}/#{key}",
+                schema: property_schema,
+                schema_pointer: "#{instance.schema_pointer}/patternProperties/#{pattern}"
+              )
+              validate_instance(subinstance, &block)
+              matched_key = true
             end
           end
 
           next if matched_key
 
-          unless additional_properties.nil?
-            subinstance = instance.merge(
-              data: value,
-              data_pointer: "#{instance.data_pointer}/#{key}",
-              schema: additional_properties,
-              schema_pointer: "#{instance.schema_pointer}/additionalProperties"
-            )
-            validate_instance(subinstance, &block)
-          end
+          next if additional_properties.nil?
+
+          subinstance = instance.merge(
+            data: value,
+            data_pointer: "#{instance.data_pointer}/#{key}",
+            schema: additional_properties,
+            schema_pointer: "#{instance.schema_pointer}/additionalProperties"
+          )
+          validate_instance(subinstance, &block)
         end
 
         if instance.after_property_validation && properties
@@ -594,6 +605,7 @@ module JSONSchemer
         Base64.strict_decode64(data)
       rescue ArgumentError => e
         raise e unless e.message == 'invalid base64'
+
         nil
       end
 
@@ -623,6 +635,7 @@ module JSONSchemer
         uri_parts = nil
         pointer.reduce(schema) do |obj, token|
           next obj.fetch(token.to_i) if obj.is_a?(Array)
+
           if obj_id = obj[id_keyword]
             uri_parts ||= []
             uri_parts << obj_id
@@ -633,9 +646,10 @@ module JSONSchemer
       end
 
       def resolve_ids(schema, ids = {}, parent_uri = nil, pointer = '')
-        if schema.is_a?(Array)
+        case schema
+        when Array
           schema.each_with_index { |subschema, index| resolve_ids(subschema, ids, parent_uri, "#{pointer}/#{index}") }
-        elsif schema.is_a?(Hash)
+        when Hash
           uri = join_uri(parent_uri, schema[id_keyword])
           schema.each do |key, value|
             if key == id_keyword && uri != parent_uri

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module JSONSchemer
   class CachedRefResolver
     def initialize(&ref_resolver)

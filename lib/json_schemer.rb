@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'base64'
 require 'ipaddr'
 require 'json'
@@ -23,9 +24,13 @@ require 'json_schemer/schema/draft7'
 
 module JSONSchemer
   class UnsupportedMetaSchema < StandardError; end
+
   class UnknownRef < StandardError; end
+
   class InvalidRefResolution < StandardError; end
+
   class InvalidFileURI < StandardError; end
+
   class InvalidSymbolKey < StandardError; end
 
   DRAFT_CLASS_BY_META_SCHEMA = {
@@ -40,6 +45,7 @@ module JSONSchemer
   FILE_URI_REF_RESOLVER = proc do |uri|
     raise InvalidFileURI, 'must use `file` scheme' unless uri.scheme == 'file'
     raise InvalidFileURI, 'cannot have a host (use `file:///`)' if uri.host && !uri.host.empty?
+
     JSON.parse(File.read(uri.path))
   end
 
@@ -62,7 +68,7 @@ module JSONSchemer
       draft_class(schema).new(schema, **options)
     end
 
-  private
+    private
 
     def draft_class(schema)
       meta_schema = schema.is_a?(Hash) && schema.key?('$schema') ? schema['$schema'] : DEFAULT_META_SCHEMA

@@ -1,4 +1,6 @@
-$LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
-require "json_schemer"
+# frozen_string_literal: true
 
-require "minitest/autorun"
+$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
+require 'json_schemer'
+
+require 'minitest/autorun'

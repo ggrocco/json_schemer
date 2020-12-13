@@ -1,5 +1,6 @@
 # frozen_string_literal: true
-$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+
+$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
 
 require 'benchmark/ips'
 require 'jschema'
@@ -29,9 +30,9 @@ benchmarks = {
           'minimum' => 0
         }
       },
-      'required' => [
-        'firstName',
-        'lastName'
+      'required' => %w[
+        firstName
+        lastName
       ]
     },
     'valid' => {
@@ -163,12 +164,12 @@ Benchmark.ips do |x|
     end
 
     x.report("rj_schema, initialized, #{name}, valid") do
-      errors = initialized_rj_schema.validate(:"schema", valid)
+      errors = initialized_rj_schema.validate(:schema, valid)
       raise if errors.any?
     end
 
     x.report("rj_schema, initialized, #{name}, invalid") do
-      errors = initialized_rj_schema.validate(:"schema", invalid)
+      errors = initialized_rj_schema.validate(:schema, invalid)
       raise if errors.empty?
     end
 

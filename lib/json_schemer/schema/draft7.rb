@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module JSONSchemer
   module Schema
     class Draft7 < Base
@@ -22,7 +23,7 @@ module JSONSchemer
         'regex'
       ].freeze
 
-    private
+      private
 
       def supported_format?(format)
         SUPPORTED_FORMATS.include?(format)
