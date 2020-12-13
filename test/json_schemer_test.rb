@@ -1020,9 +1020,9 @@ class JSONSchemerTest < Minitest::Test
               end
             ).validate(test.fetch('data')).to_a
             if test.fetch('valid')
-              assert_empty(errors, file)
+              assert_empty(errors, "#{defn.fetch('description')}, test on: #{test.fetch('description')}, #{file}")
             else
-              assert(errors.any?, file)
+              assert(errors.any?, "#{defn.fetch('description')}, test on: #{test.fetch('description')}, #{file}")
             end
             errors
           end
